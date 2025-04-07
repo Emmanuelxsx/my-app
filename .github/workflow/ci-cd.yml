@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,20 +19,25 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build Docker image
-      run: docker build -t ${{ secrets.DOCKER_IMAGE }}:latest .
+      run: docker build -t my-app:latest .
 
-    - name: Push Docker image
-      run: docker push ${{ secrets.DOCKER_IMAGE }}:latest
-
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
-
-    - name: Configure Kubeconfig
+    - name: Run Docker container (Local Testing)
       run: |
-        echo "${{ secrets.KUBECONFIG }}" > kubeconfig
-        export KUBECONFIG=$PWD/kubeconfig
+        docker run -d -p 8080:80 --name my-app-container my-app:latest
+        sleep 10  # Wait for the container to start
+        curl http://localhost:8080  # Test the app locally
+        docker stop my-app-container  # Stop the container after testing
+        docker rm my-app-container  # Clean up the container
 
-    - name: Deploy to Kubernetes
-      run: kubectl apply -f k8s/deployment.yaml
+#    - name: Set up kubectl
+#      uses: azure/setup-kubectl@v3
+#      with:
+#        version: 'latest'
+
+#    - name: Configure Kubeconfig
+#      run: |
+#        echo "${{ secrets.KUBECONFIG }}" > kubeconfig
+#        export KUBECONFIG=$PWD/kubeconfig
+
+#    - name: Deploy to Kubernetes
+#      run: kubectl apply -f k8s/deployment.yaml
